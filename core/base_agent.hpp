@@ -4,6 +4,7 @@
 #include "zeromq_bus.hpp"
 #include "llama_client.hpp"
 #include "tool.hpp"
+#include "stats_manager.hpp"
 #include <iostream>
 #include <vector>
 #include <map>
@@ -118,19 +119,22 @@ protected:
                                      "Provide a concise and critical response to their point.";
 
                 // Generate response using the integrated AI engine
-                std::string response = llm_->Generate(prompt, {});
+                GenerationResult result = llm_->Generate(prompt, {});
  
                 if (!is_participating_) {
                     std::cout << "[Agent:" << name_ << "] Skipping response because debate stopped.\n";
                     return;
                 }
+
+                // Report tokens
+                StatsManager::GetInstance().AddTokens(result.prompt_tokens + result.completion_tokens);
  
                 Message reply;
                 reply.header.msg_id = name_ + "_reply_" + std::to_string(std::time(nullptr));
                 reply.header.sender = name_;
                 reply.header.type = "DEBATE_TURN";
                 reply.payload.action = "speak";
-                reply.payload.content = response;
+                reply.payload.content = result.text;
                 
                 // Add to local history to track rounds
                 history_.push_back({{"round", history_.size()}});

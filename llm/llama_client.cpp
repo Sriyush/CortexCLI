@@ -58,9 +58,11 @@ bool LlamaClient::LoadModel(const std::string& model_path) {
     return true;
 }
 
-std::string LlamaClient::Generate(const std::string& prompt, const GenerationOptions& options) {
+GenerationResult LlamaClient::Generate(const std::string& prompt, const GenerationOptions& options) {
+    GenerationResult res_obj;
     if (!impl_->ctx) {
-        return "[Simulated LLM] Re: " + prompt.substr(0, 30) + "... (Model not loaded)";
+        res_obj.text = "[Simulated LLM] Re: " + prompt.substr(0, 30) + "... (Model not loaded)";
+        return res_obj;
     }
 
     const struct llama_vocab* vocab = llama_model_get_vocab(impl_->model);
@@ -136,7 +138,10 @@ std::string LlamaClient::Generate(const std::string& prompt, const GenerationOpt
     std::cout << "\n";
 
     llama_batch_free(batch);
-    return result;
+    res_obj.text = result;
+    res_obj.prompt_tokens = n_tokens;
+    res_obj.completion_tokens = n_cur - n_tokens;
+    return res_obj;
 }
 #else
 // Dummy implementation when llama.cpp is disabled
@@ -144,8 +149,10 @@ struct LlamaClient::Impl {};
 LlamaClient::LlamaClient() : impl_(std::make_unique<Impl>()) {}
 LlamaClient::~LlamaClient() {}
 bool LlamaClient::LoadModel(const std::string&) { return false; }
-std::string LlamaClient::Generate(const std::string&, const GenerationOptions&) {
-    return "[LlamaClient] Built without llama.cpp support. Use Ollama instead.";
+GenerationResult LlamaClient::Generate(const std::string&, const GenerationOptions&) {
+    GenerationResult res;
+    res.text = "[LlamaClient] Built without llama.cpp support. Use Ollama instead.";
+    return res;
 }
 #endif
 

@@ -12,7 +12,7 @@ public:
     ~OllamaClient();
 
     bool LoadModel(const std::string& model_name) override;
-    std::string Generate(const std::string& prompt, const GenerationOptions& options) override;
+    GenerationResult Generate(const std::string& prompt, const GenerationOptions& options) override;
     std::vector<std::string> ListModels() override;
     bool RemoveModel(const std::string& model_name) override;
 

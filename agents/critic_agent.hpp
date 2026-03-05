@@ -24,19 +24,22 @@ protected:
                                      "Context: " + sender + " said: \"" + content + "\"\n"
                                      "Critique this point ruthlessly and suggest potential failure modes.";
 
-                std::string response = llm_->Generate(prompt, {});
+                GenerationResult result = llm_->Generate(prompt, {});
  
                 if (!is_participating_) {
                     std::cout << "[Agent:" << name_ << "] Skipping response because debate stopped.\n";
                     return;
                 }
  
+                // Report tokens
+                StatsManager::GetInstance().AddTokens(result.prompt_tokens + result.completion_tokens);
+ 
                 Message reply;
                 reply.header.msg_id = name_ + "_" + std::to_string(std::time(nullptr));
                 reply.header.sender = name_;
                 reply.header.type = "DEBATE_TURN";
                 reply.payload.action = "speak";
-                reply.payload.content = "[CRITIC] " + response;
+                reply.payload.content = "[CRITIC] " + result.text;
                 
                 history_.push_back({{"round", history_.size()}});
                 std::this_thread::sleep_for(std::chrono::seconds(2));

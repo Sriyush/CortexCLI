@@ -53,51 +53,71 @@ make -j$(nproc)
 
 ## 📖 Usage Guide
 
-### 1. Configure Providers
-Use the `auth` command to set your default provider and API keys.
+### Global Options
+Use these flags with any command for core configuration.
+```bash
+-d, --dashboard      # Start the TUI dashboard
+-m, --model <name>   # Globally override model
+--provider <name>    # Set provider (ollama, openai, gemini, claude)
+--ollama-url <url>   # Set Ollama endpoint
+```
+
+### 1. Initial Setup
+Configure your providers and API keys interactively.
 ```bash
 ./build/cortex auth
 ```
 
-### 2. Manage Agents
-Create, list, and delete agents. Agents now support **persistent LLM settings**.
+### 2. Agent Management
+Cortex supports a hierarchy of specialized agents with persistent configurations.
 
 ```bash
-# Create an agent using default Ollama model (auto-picks first available)
+# Create a researcher using Ollama (auto-picks default model)
 ./build/cortex agent create alice researcher --ollama
 
-# Create an agent with a specific model
+# Create a coder with a specific model
 ./build/cortex agent create bob coder --ollama -m llama3:8b
 
-# List and manage agents
+# List all agents and their types
 ./build/cortex agent list
+
+# Start or stop an agent process
+./build/cortex agent start bob
+./build/cortex agent stop bob
+
+# Delete agents (supports multiple names and 'pdel' alias)
+./build/cortex agent delete alice bob
 ./build/cortex pdel -p alice bob
 ```
 
-### 3. Ollama Model Control
-Manage your local Ollama models directly from the CLI.
+### 3. Model Management (Ollama)
+Control your local LLM library directly.
 ```bash
-# List local models
+# List available local models
 ./build/cortex model list
 
-# Remove a model
-./build/cortex model rm tinyllama:latest
+# Remove a model (alias: rm, delete)
+./build/cortex model remove tinyllama:latest
 ```
 
-### 4. Tasks & Debates
-Initiate or stop discussions and tasks.
+### 4. Debates & Tasks
+Coordinate multiple agents on a specific problem.
+
 ```bash
-# Start the dashboard (Terminal 1)
+# Terminal 1: Start the dashboard to monitor the team
 ./build/cortex -d
 
-# Start a multi-agent debate (Terminal 2)
-./build/cortex debate start --topic "Is AI better than humans at coding?" -p Alice -p Bob
+# Terminal 2: Start a 2-agent debate
+./build/cortex debate start --topic "C++ vs Rust for Agentic OS" -p Alice -p Bob
 
-# Run a specific development task
-./build/cortex run "Build a websocket server in C++"
-
-# Stop all active debates/tasks
+# Terminal 2: Stop all active reasoning/debating
 ./build/cortex debate stop
+
+# Run a single task (Placeholder)
+./build/cortex run "Analyze research_agent.hpp"
+
+# View agent activity logs (Placeholder)
+./build/cortex logs alice
 ```
 
 ---

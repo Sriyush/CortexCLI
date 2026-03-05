@@ -12,12 +12,18 @@ struct GenerationOptions {
     float top_p = 0.95f;
 };
 
+struct GenerationResult {
+    std::string text;
+    int32_t prompt_tokens = 0;
+    int32_t completion_tokens = 0;
+};
+
 class LLMClient {
 public:
     virtual ~LLMClient() = default;
 
     virtual bool LoadModel(const std::string& model_path) = 0;
-    virtual std::string Generate(const std::string& prompt, const GenerationOptions& options) = 0;
+    virtual GenerationResult Generate(const std::string& prompt, const GenerationOptions& options) = 0;
     virtual std::vector<std::string> ListModels() = 0;
     virtual bool RemoveModel(const std::string& model_name) = 0;
 };
@@ -28,7 +34,7 @@ public:
     ~LlamaClient();
 
     bool LoadModel(const std::string& model_path) override;
-    std::string Generate(const std::string& prompt, const GenerationOptions& options) override;
+    GenerationResult Generate(const std::string& prompt, const GenerationOptions& options) override;
     std::vector<std::string> ListModels() override { return {}; }
     bool RemoveModel(const std::string& /*model_name*/) override { return false; }
 

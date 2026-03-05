@@ -122,6 +122,7 @@ add_executable(cortex
     cli/main.cpp
     core/agent_manager.cpp
     core/debate_manager.cpp
+    core/stats_manager.cpp
     tui/dashboard.cpp
     messaging/zeromq_bus.cpp
     llm/llama_client.cpp

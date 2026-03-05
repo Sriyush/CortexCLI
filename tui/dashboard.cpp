@@ -1,4 +1,5 @@
 #include "dashboard.hpp"
+#include "stats_manager.hpp"
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
@@ -90,9 +91,15 @@ Element Dashboard::RenderMainContent() {
     items.push_back(text("CORTEX OS - MULTI-AGENT ENVIRONMENT") | bold | center | color(Color::Cyan));
     items.push_back(separator());
     
+    auto agents = agent_manager_.GetAllAgents();
+    int running_count = 0;
+    for (const auto& a : agents) if (a->GetState() == AgentState::RUNNING) running_count++;
+
     Elements status_items;
     status_items.push_back(text("System Status: OPERATIONAL") | color(Color::Green));
-    status_items.push_back(text("Memory Usage: Low") | dim);
+    status_items.push_back(text("Memory Usage: " + StatsManager::GetMemoryUsage()) | color(Color::Cyan));
+    status_items.push_back(text("Tokens Used: " + std::to_string(StatsManager::GetInstance().GetTotalTokens())) | color(Color::Yellow));
+    status_items.push_back(text("Agents Running: " + std::to_string(running_count)) | color(Color::Blue));
     status_items.push_back(text("Active Tasks: 0") | dim);
     
     items.push_back(vbox(std::move(status_items)) | border);

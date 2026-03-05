@@ -26,14 +26,16 @@ bool OllamaClient::LoadModel(const std::string& model_name) {
         std::cout << "[OllamaClient] Model '" << model_name << "' is available.\n";
         return true;
     } else {
-        std::cerr << "[OllamaClient] Error: Model '" << model_name << "' not found or Ollama is not running.\n";
+        std::cerr << "[OllamaClient] Error: Model '" << model_name << "' not found or Ollama is not running (please run ollama serve to keep ollama running).\n";
         return false;
     }
 }
 
-std::string OllamaClient::Generate(const std::string& prompt, const GenerationOptions& options) {
+GenerationResult OllamaClient::Generate(const std::string& prompt, const GenerationOptions& options) {
+    GenerationResult result;
     if (model_name_.empty()) {
-        return "[OllamaClient] Error: Model not loaded.";
+        result.text = "[OllamaClient] Error: Model not loaded.";
+        return result;
     }
 
     httplib::Client cli(base_url_);
@@ -55,15 +57,18 @@ std::string OllamaClient::Generate(const std::string& prompt, const GenerationOp
     if (res && res->status == 200) {
         try {
             auto response_json = json::parse(res->body);
-            return response_json.value("response", "");
+            result.text = response_json.value("response", "");
+            result.prompt_tokens = response_json.value("prompt_eval_count", 0);
+            result.completion_tokens = response_json.value("eval_count", 0);
         } catch (const std::exception& e) {
             std::cerr << "[OllamaClient] JSON parse error: " << e.what() << "\n";
-            return "[OllamaClient] Error: Failed to parse response.";
+            result.text = "[OllamaClient] Error: Failed to parse response.";
         }
     } else {
         std::cerr << "[OllamaClient] HTTP error: " << (res ? std::to_string(res->status) : "Connection failed") << "\n";
-        return "[OllamaClient] Error: Request failed.";
+        result.text = "[OllamaClient] Error: Request failed.";
     }
+    return result;
 }
 
 std::vector<std::string> OllamaClient::ListModels() {

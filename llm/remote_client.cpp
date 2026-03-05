@@ -27,16 +27,21 @@ bool RemoteClient::LoadModel(const std::string& model_name) {
     return true;
 }
 
-std::string RemoteClient::Generate(const std::string& prompt, const GenerationOptions& options) {
+GenerationResult RemoteClient::Generate(const std::string& prompt, const GenerationOptions& options) {
     switch (provider_) {
         case RemoteProvider::OpenAI: return GenerateOpenAI(prompt, options);
         case RemoteProvider::Gemini: return GenerateGemini(prompt, options);
         case RemoteProvider::Claude: return GenerateClaude(prompt, options);
-        default: return "[RemoteClient] Error: Unknown provider.";
+        default: {
+            GenerationResult res;
+            res.text = "[RemoteClient] Error: Unknown provider.";
+            return res;
+        }
     }
 }
 
-std::string RemoteClient::GenerateOpenAI(const std::string& prompt, const GenerationOptions& options) {
+GenerationResult RemoteClient::GenerateOpenAI(const std::string& prompt, const GenerationOptions& options) {
+    GenerationResult res_obj;
     httplib::SSLClient cli("api.openai.com");
     cli.set_connection_timeout(10);
     cli.set_read_timeout(60);
@@ -58,12 +63,19 @@ std::string RemoteClient::GenerateOpenAI(const std::string& prompt, const Genera
 
     if (res && res->status == 200) {
         auto j = json::parse(res->body);
-        return j["choices"][0]["message"]["content"];
+        res_obj.text = j["choices"][0]["message"]["content"];
+        if (j.contains("usage")) {
+            res_obj.prompt_tokens = j["usage"].value("prompt_tokens", 0);
+            res_obj.completion_tokens = j["usage"].value("completion_tokens", 0);
+        }
+        return res_obj;
     }
-    return "[RemoteClient] OpenAI API Error: " + (res ? std::to_string(res->status) : "Connection failed") + " " + (res ? res->body : "");
+    res_obj.text = "[RemoteClient] OpenAI API Error: " + (res ? std::to_string(res->status) : "Connection failed") + " " + (res ? res->body : "");
+    return res_obj;
 }
 
-std::string RemoteClient::GenerateGemini(const std::string& prompt, const GenerationOptions& options) {
+GenerationResult RemoteClient::GenerateGemini(const std::string& prompt, const GenerationOptions& options) {
+    GenerationResult res_obj;
     httplib::SSLClient cli("generativelanguage.googleapis.com");
     cli.set_connection_timeout(10);
     cli.set_read_timeout(60);
@@ -82,12 +94,19 @@ std::string RemoteClient::GenerateGemini(const std::string& prompt, const Genera
 
     if (res && res->status == 200) {
         auto j = json::parse(res->body);
-        return j["candidates"][0]["content"]["parts"][0]["text"];
+        res_obj.text = j["candidates"][0]["content"]["parts"][0]["text"];
+        if (j.contains("usageMetadata")) {
+            res_obj.prompt_tokens = j["usageMetadata"].value("promptTokenCount", 0);
+            res_obj.completion_tokens = j["usageMetadata"].value("candidatesTokenCount", 0);
+        }
+        return res_obj;
     }
-    return "[RemoteClient] Gemini API Error: " + (res ? std::to_string(res->status) : "Connection failed") + " " + (res ? res->body : "");
+    res_obj.text = "[RemoteClient] Gemini API Error: " + (res ? std::to_string(res->status) : "Connection failed") + " " + (res ? res->body : "");
+    return res_obj;
 }
 
-std::string RemoteClient::GenerateClaude(const std::string& prompt, const GenerationOptions& options) {
+GenerationResult RemoteClient::GenerateClaude(const std::string& prompt, const GenerationOptions& options) {
+    GenerationResult res_obj;
     httplib::SSLClient cli("api.anthropic.com");
     cli.set_connection_timeout(10);
     cli.set_read_timeout(60);
@@ -110,9 +129,15 @@ std::string RemoteClient::GenerateClaude(const std::string& prompt, const Genera
 
     if (res && res->status == 200) {
         auto j = json::parse(res->body);
-        return j["content"][0]["text"];
+        res_obj.text = j["content"][0]["text"];
+        if (j.contains("usage")) {
+            res_obj.prompt_tokens = j["usage"].value("input_tokens", 0);
+            res_obj.completion_tokens = j["usage"].value("output_tokens", 0);
+        }
+        return res_obj;
     }
-    return "[RemoteClient] Claude API Error: " + (res ? std::to_string(res->status) : "Connection failed") + " " + (res ? res->body : "");
+    res_obj.text = "[RemoteClient] Claude API Error: " + (res ? std::to_string(res->status) : "Connection failed") + " " + (res ? res->body : "");
+    return res_obj;
 }
 
 std::vector<std::string> RemoteClient::ListModels() {
