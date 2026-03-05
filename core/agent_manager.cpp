@@ -8,6 +8,8 @@
 #include "research_agent.hpp"
 #include "coding_agent.hpp"
 #include "critic_agent.hpp"
+#include "ollama_client.hpp"
+#include "remote_client.hpp"
 #include <iostream>
 
 namespace cortex {
@@ -24,14 +26,39 @@ AgentManager::AgentManager(std::shared_ptr<MessageBus> bus,
             AgentSnapshot snapshot;
             if (memory_->LoadAgent(name, snapshot)) {
                 std::shared_ptr<BaseAgent> agent;
+                std::shared_ptr<LLMClient> agent_llm = llm_;
+                if (!snapshot.llm_provider.empty() && !snapshot.llm_model.empty()) {
+                    if (snapshot.llm_provider == "ollama") {
+                        Config config;
+                        memory_->LoadConfig(config);
+                        agent_llm = std::make_shared<OllamaClient>(config.ollama_url);
+                        agent_llm->LoadModel(snapshot.llm_model);
+                    } else {
+                        RemoteProvider rp = RemoteClient::StringToProvider(snapshot.llm_provider);
+                        if (rp != RemoteProvider::Unknown) {
+                            Config config;
+                            memory_->LoadConfig(config);
+                            std::string key = "";
+                            if (snapshot.llm_provider == "openai") key = config.openai_key;
+                            else if (snapshot.llm_provider == "gemini") key = config.gemini_key;
+                            else if (snapshot.llm_provider == "claude") key = config.claude_key;
+                            
+                            if (!key.empty()) {
+                                agent_llm = std::make_shared<RemoteClient>(rp, key);
+                                agent_llm->LoadModel(snapshot.llm_model);
+                            }
+                        }
+                    }
+                }
+
                 if (snapshot.type == "researcher") {
-                    agent = std::make_shared<ResearchAgent>(snapshot.name, bus_, llm_);
+                    agent = std::make_shared<ResearchAgent>(snapshot.name, bus_, agent_llm);
                 } else if (snapshot.type == "coder") {
-                    agent = std::make_shared<CodingAgent>(snapshot.name, bus_, llm_);
+                    agent = std::make_shared<CodingAgent>(snapshot.name, bus_, agent_llm);
                 } else if (snapshot.type == "critic") {
-                    agent = std::make_shared<CriticAgent>(snapshot.name, bus_, llm_);
+                    agent = std::make_shared<CriticAgent>(snapshot.name, bus_, agent_llm);
                 } else {
-                    agent = std::make_shared<BaseAgent>(snapshot.name, snapshot.type, bus_, llm_);
+                    agent = std::make_shared<BaseAgent>(snapshot.name, snapshot.type, bus_, agent_llm);
                 }
                 
                 // Register default tools
@@ -49,18 +76,47 @@ AgentManager::~AgentManager() {
     // Cleanup
 }
 
-std::shared_ptr<Agent> AgentManager::CreateAgent(const std::string& name, const std::string& type) {
+std::shared_ptr<Agent> AgentManager::CreateAgent(const std::string& name, const std::string& type, 
+                                                const std::string& provider, const std::string& model) {
     std::cout << "[AgentManager] Creating agent '" << name << "' of type '" << type << "'\n";
+    if (!provider.empty()) {
+        std::cout << "[AgentManager] Agent '" << name << "' will use provider: " << provider << ", model: " << model << "\n";
+    }
     
+    std::shared_ptr<LLMClient> agent_llm = llm_;
+    if (!provider.empty() && !model.empty()) {
+        if (provider == "ollama") {
+            Config config;
+            memory_->LoadConfig(config);
+            agent_llm = std::make_shared<OllamaClient>(config.ollama_url);
+            agent_llm->LoadModel(model);
+        } else {
+            RemoteProvider rp = RemoteClient::StringToProvider(provider);
+            if (rp != RemoteProvider::Unknown) {
+                Config config;
+                memory_->LoadConfig(config);
+                std::string key = "";
+                if (provider == "openai") key = config.openai_key;
+                else if (provider == "gemini") key = config.gemini_key;
+                else if (provider == "claude") key = config.claude_key;
+                
+                if (!key.empty()) {
+                    agent_llm = std::make_shared<RemoteClient>(rp, key);
+                    agent_llm->LoadModel(model);
+                }
+            }
+        }
+    }
+
     std::shared_ptr<BaseAgent> agent;
     if (type == "researcher") {
-        agent = std::make_shared<ResearchAgent>(name, bus_, llm_);
+        agent = std::make_shared<ResearchAgent>(name, bus_, agent_llm);
     } else if (type == "coder") {
-        agent = std::make_shared<CodingAgent>(name, bus_, llm_);
+        agent = std::make_shared<CodingAgent>(name, bus_, agent_llm);
     } else if (type == "critic") {
-        agent = std::make_shared<CriticAgent>(name, bus_, llm_);
+        agent = std::make_shared<CriticAgent>(name, bus_, agent_llm);
     } else {
-        agent = std::make_shared<BaseAgent>(name, type, bus_, llm_);
+        agent = std::make_shared<BaseAgent>(name, type, bus_, agent_llm);
     }
     
     // Register default tools
@@ -76,6 +132,8 @@ std::shared_ptr<Agent> AgentManager::CreateAgent(const std::string& name, const 
         snapshot.name = name;
         snapshot.type = type;
         snapshot.state = "IDLE";
+        snapshot.llm_provider = provider;
+        snapshot.llm_model = model;
         snapshot.history = nlohmann::json::array();
         memory_->SaveAgent(snapshot);
     }
@@ -92,6 +150,9 @@ std::shared_ptr<Agent> AgentManager::GetAgent(const std::string& name) const {
 }
 
 bool AgentManager::RemoveAgent(const std::string& name) {
+    if (memory_) {
+        memory_->DeleteAgent(name);
+    }
     return agents_.erase(name) > 0;
 }
 

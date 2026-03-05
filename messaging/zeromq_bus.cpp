@@ -26,11 +26,13 @@ void ZeroMQBus::Connect(const std::string& endpoint, bool is_server) {
         sub_socket_->bind(endpoint + "_sub");
         // Hub MUST subscribe to everything to re-broadcast
         sub_socket_->set(zmq::sockopt::subscribe, "");
+        sub_socket_->set(zmq::sockopt::rcvtimeo, 100); 
         std::cout << "[ZeroMQBus] Hub started at " << endpoint << "\n";
     } else {
         // Clients connect to the Hub's pub/sub
         sub_socket_->connect(endpoint + "_pub");
         pub_socket_->connect(endpoint + "_sub");
+        sub_socket_->set(zmq::sockopt::rcvtimeo, 100);
         std::cout << "[ZeroMQBus] Client connected to " << endpoint << "\n";
     }
 }

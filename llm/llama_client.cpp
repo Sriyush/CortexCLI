@@ -1,10 +1,13 @@
 #include "llama_client.hpp"
+#ifdef USE_LLAMA_CPP
 #include "llama.h"
+#endif
 #include <iostream>
 #include <vector>
 
 namespace cortex {
 
+#ifdef USE_LLAMA_CPP
 struct LlamaClient::Impl {
     llama_model* model = nullptr;
     llama_context* ctx = nullptr;
@@ -117,11 +120,10 @@ std::string LlamaClient::Generate(const std::string& prompt, const GenerationOpt
         int n = llama_token_to_piece(vocab, new_token, buf, sizeof(buf), 0, false);
         if (n > 0) {
             result.append(buf, n);
-            // Proactive console output for easier debugging in the terminal
             std::cout << buf << std::flush;
         }
 
-        // Prepare next batch (single token)
+        // Prepare next batch
         batch.n_tokens = 0;
         batch.token[batch.n_tokens] = new_token;
         batch.pos[batch.n_tokens]   = n_cur;
@@ -136,5 +138,15 @@ std::string LlamaClient::Generate(const std::string& prompt, const GenerationOpt
     llama_batch_free(batch);
     return result;
 }
+#else
+// Dummy implementation when llama.cpp is disabled
+struct LlamaClient::Impl {};
+LlamaClient::LlamaClient() : impl_(std::make_unique<Impl>()) {}
+LlamaClient::~LlamaClient() {}
+bool LlamaClient::LoadModel(const std::string&) { return false; }
+std::string LlamaClient::Generate(const std::string&, const GenerationOptions&) {
+    return "[LlamaClient] Built without llama.cpp support. Use Ollama instead.";
+}
+#endif
 
 } // namespace cortex

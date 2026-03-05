@@ -25,7 +25,12 @@ protected:
                                      "Provide a response focusing on the practical implementation and architectural impact.";
 
                 std::string response = llm_->Generate(prompt, {});
-
+ 
+                if (!is_participating_) {
+                    std::cout << "[Agent:" << name_ << "] Skipping response because debate stopped.\n";
+                    return;
+                }
+ 
                 Message reply;
                 reply.header.msg_id = name_ + "_" + std::to_string(std::time(nullptr));
                 reply.header.sender = name_;

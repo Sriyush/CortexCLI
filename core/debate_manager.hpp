@@ -16,6 +16,7 @@ public:
      * @param agent_names List of agents to participate.
      */
     void StartDebate(const std::string& topic, const std::vector<std::string>& agent_names);
+    void StopDebate();
 
 private:
     AgentManager& agent_manager_;

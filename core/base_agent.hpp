@@ -41,6 +41,11 @@ public:
         bus_->Subscribe("DEBATE_TURN", [this](const Message& msg) {
             this->on_debate_turn(msg);
         });
+ 
+        bus_->Subscribe("DEBATE_STOP", [this](const Message& /*msg*/) {
+            this->is_participating_ = false;
+            std::cout << "[Agent:" << name_ << "] Debate stopped by manager.\n";
+        });
     }
 
     void Stop() override {
@@ -71,7 +76,12 @@ protected:
         if (msg.payload.params.contains("participants")) {
             bool participating = false;
             for (const auto& p : msg.payload.params["participants"]) {
-                if (p == name_) { participating = true; break; }
+                std::string p_str = p.get<std::string>();
+                std::string name_lower = name_;
+                std::string p_lower = p_str;
+                for (auto &c : name_lower) c = std::tolower(c);
+                for (auto &c : p_lower) c = std::tolower(c);
+                if (p_lower == name_lower) { participating = true; break; }
             }
             is_participating_ = participating;
             if (!is_participating_) return;
@@ -109,7 +119,12 @@ protected:
 
                 // Generate response using the integrated AI engine
                 std::string response = llm_->Generate(prompt, {});
-
+ 
+                if (!is_participating_) {
+                    std::cout << "[Agent:" << name_ << "] Skipping response because debate stopped.\n";
+                    return;
+                }
+ 
                 Message reply;
                 reply.header.msg_id = name_ + "_reply_" + std::to_string(std::time(nullptr));
                 reply.header.sender = name_;

@@ -5,6 +5,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+option(USE_LLAMA_CPP "Build with llama.cpp support" OFF)
+
 # Find threads
 find_package(Threads REQUIRED)
 
@@ -57,18 +59,33 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(json)
 
-# llama.cpp for local LLM runtime
+# cpp-httplib for HTTP requests (Ollama & Remote APIs)
+set(CPP_HTTPLIB_OPENSSL_SUPPORT ON CACHE BOOL "" FORCE)
+find_package(OpenSSL REQUIRED)
+
 FetchContent_Declare(
-    llama
-    GIT_REPOSITORY https://github.com/ggerganov/llama.cpp.git
-    GIT_TAG        master  # or a specific tag like b2000
+  httplib
+  GIT_REPOSITORY https://github.com/yhirose/cpp-httplib.git
+  GIT_TAG        v0.14.3
 )
-# Disable llama.cpp examples and tests to keep build fast
-set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(LLAMA_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(LLAMA_BUILD_SERVER OFF CACHE BOOL "" FORCE)
-set(LLAMA_CURL ON CACHE BOOL "" FORCE) # Good for remote models eventually
-FetchContent_MakeAvailable(llama)
+FetchContent_MakeAvailable(httplib)
+
+FetchContent_MakeAvailable(httplib)
+
+if(USE_LLAMA_CPP)
+    # llama.cpp for local LLM runtime
+    FetchContent_Declare(
+        llama
+        GIT_REPOSITORY https://github.com/ggerganov/llama.cpp.git
+        GIT_TAG        master  # or a specific tag like b2000
+    )
+    # Disable llama.cpp examples and tests to keep build fast
+    set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(LLAMA_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(LLAMA_BUILD_SERVER OFF CACHE BOOL "" FORCE)
+    set(LLAMA_CURL ON CACHE BOOL "" FORCE) # Good for remote models eventually
+    FetchContent_MakeAvailable(llama)
+endif()
 
 # SQLite3 for persistent memory
 FetchContent_Declare(
@@ -108,6 +125,8 @@ add_executable(cortex
     tui/dashboard.cpp
     messaging/zeromq_bus.cpp
     llm/llama_client.cpp
+    llm/ollama_client.cpp
+    llm/remote_client.cpp
     memory/memory_manager.cpp
 )
 
@@ -119,7 +138,14 @@ target_link_libraries(cortex PRIVATE
     libzmq-static
     cppzmq
     nlohmann_json::nlohmann_json
-    llama
+    httplib::httplib
+    OpenSSL::SSL
+    OpenSSL::Crypto
     sqlite3
     Threads::Threads
 )
+
+if(USE_LLAMA_CPP)
+    target_link_libraries(cortex PRIVATE llama)
+    target_compile_definitions(cortex PRIVATE USE_LLAMA_CPP)
+endif()

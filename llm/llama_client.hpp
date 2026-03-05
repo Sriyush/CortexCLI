@@ -18,6 +18,8 @@ public:
 
     virtual bool LoadModel(const std::string& model_path) = 0;
     virtual std::string Generate(const std::string& prompt, const GenerationOptions& options) = 0;
+    virtual std::vector<std::string> ListModels() = 0;
+    virtual bool RemoveModel(const std::string& model_name) = 0;
 };
 
 class LlamaClient : public LLMClient {
@@ -27,6 +29,8 @@ public:
 
     bool LoadModel(const std::string& model_path) override;
     std::string Generate(const std::string& prompt, const GenerationOptions& options) override;
+    std::vector<std::string> ListModels() override { return {}; }
+    bool RemoveModel(const std::string& /*model_name*/) override { return false; }
 
 private:
     struct Impl;

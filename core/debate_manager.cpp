@@ -36,4 +36,18 @@ void DebateManager::StartDebate(const std::string& topic, const std::vector<std:
     std::cout << "[DebateManager] Debate initiated successfully.\n";
 }
 
+void DebateManager::StopDebate() {
+    std::cout << "[DebateManager] Stopping all active debates.\n";
+    
+    Message stop_msg;
+    stop_msg.header.msg_id = "debate_stop_" + std::to_string(std::time(nullptr));
+    stop_msg.header.sender = "DebateManager";
+    stop_msg.header.type = "DEBATE_STOP";
+    stop_msg.payload.action = "debate_stop";
+    stop_msg.payload.content = "All agents have been notified to stop debating.";
+    
+    bus_->Publish(stop_msg);
+    std::cout << "[DebateManager] Debate stop signal sent.\n";
+}
+
 } // namespace cortex

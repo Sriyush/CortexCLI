@@ -1,18 +1,20 @@
 # Cortex CLI: Multi-Agent Operating Environment
 
-Cortex CLI is a high-performance, local-first multi-agent orchestration framework built in C++20. It provides a robust messaging infrastructure, persistent memory, and integrated local LLM inference via `llama.cpp`, all monitored through a sleek terminal-based dashboard.
+Cortex CLI is a high-performance, local-first multi-agent orchestration framework built in C++20. It provides a robust messaging infrastructure, persistent memory, and integrated local LLM inference via **Ollama** and **llama.cpp**, all monitored through a sleek terminal-based dashboard.
 
 ## 🚀 Features
 
-- **Local LLM Inference**: Direct integration with `llama.cpp` for GGUF model support.
+- **Local LLM Inference**: Seamless integration with **Ollama** for high-performance local inference. Now with **automatic model discovery**.
+- **Remote LLM Inference**: Native support for **Gemini**, **OpenAI**, and **Claude** via secure API keys.
 - **Asynchronous Messaging**: ZeroMQ-powered bus architecture for low-latency agent communication.
-- **Persistent Memory**: SQLite-backed long-term storage for agent states and message history.
+- **Persistent Memory**: SQLite-backed long-term storage for agent states and message history. Supports **per-agent LLM configurations**.
 - **Specialized Agent Roles**: 
-  - `Researcher`: Focused on technical data and evidence.
+  - `Planner`: Breaks tasks into actionable steps.
+  - `Researcher`: Finds technical data and evidence.
   - `Coder`: High-efficiency architectural and implementation focus.
   - `Critic`: Ruthless reviewer for identifying edge cases and security risks.
-- **Rich TUI Dashboard**: Real-time monitoring of agent health and protocol logs using FTXUI.
-- **Extensible Tool System**: Native support for File I/O and Shell execution.
+- **Rich TUI Dashboard**: Real-time monitoring of agent health, protocol logs, and system stats using FTXUI.
+- **Agent OS Design**: PID-based process management (`cortex ps`, `cortex kill`) and dynamic state tracking.
 
 ## 🏗 Architecture
 
@@ -25,7 +27,7 @@ graph TD
     ZMQ <--> Agent2[Coding Agent]
     ZMQ <--> Agent3[Critic Agent]
     Agent1 --> SQLite[(Persistent Memory)]
-    Agent1 --> LLM[llama.cpp Engine]
+    Agent1 --> LLM[LLM Engine: Ollama / Remote]
 ```
 
 ## 🛠 Installation & Build
@@ -35,6 +37,7 @@ graph TD
 - GCC (>= 11) or Clang (>= 13)
 - ZeroMQ (libzmq and cppzmq)
 - SQLite3
+- [Ollama](https://ollama.com/) (Recommended for easiest setup)
 
 ### Build Instructions
 ```bash
@@ -42,61 +45,85 @@ graph TD
 git clone https://github.com/user/CortexCLI.git
 cd CortexCLI
 
-# Run the build script
-./scripts/build.sh
+# Optimized build (Ollama only, faster setup)
+mkdir -p build && cd build
+cmake .. -DUSE_LLAMA_CPP=OFF
+make -j$(nproc)
 ```
 
 ## 📖 Usage Guide
 
-### 1. Start the Dashboard (The Hub)
-The dashboard must be running to route messages between agents. To enable real AI generation, provide a path to a GGUF model.
-
+### 1. Configure Providers
+Use the `auth` command to set your default provider and API keys.
 ```bash
-# With AI engine enabled
-./build/cortex --dashboard --model ./models/llama-3-8b.gguf
-
-# Fallback mode (Simulation)
-./build/cortex --dashboard
+./build/cortex auth
 ```
 
 ### 2. Manage Agents
-In a separate terminal, you can create and manage agents:
+Create, list, and delete agents. Agents now support **persistent LLM settings**.
 
 ```bash
-# Create specialized agents
-./build/cortex agent create researcher_alice researcher
-./build/cortex agent create coder_bob coder
+# Create an agent using default Ollama model (auto-picks first available)
+./build/cortex agent create alice researcher --ollama
 
-# List current agents
+# Create an agent with a specific model
+./build/cortex agent create bob coder --ollama -m llama3:8b
+
+# List and manage agents
 ./build/cortex agent list
+./build/cortex pdel -p alice bob
 ```
 
-### 3. Orchestrate a Debate
-Initiate a discussion between your agents on a specific topic:
-
+### 3. Ollama Model Control
+Manage your local Ollama models directly from the CLI.
 ```bash
-./build/cortex debate --topic "Rust vs C++ for System Programming" -p researcher_alice coder_bob
+# List local models
+./build/cortex model list
+
+# Remove a model
+./build/cortex model rm tinyllama:latest
 ```
 
-## 📂 Project Structure
+### 4. Tasks & Debates
+Initiate or stop discussions and tasks.
+```bash
+# Start the dashboard (Terminal 1)
+./build/cortex -d
 
-- `agents/`: Specialized agent implementations.
-- `cli/`: CLI command parsing and subcommands.
-- `core/`: Core orchestrators (AgentManager, DebateManager).
-- `llm/`: Llama.cpp integration and inference logic.
-- `messaging/`: ZeroMQ bus and protocol definitions.
-- `memory/`: SQLite persistence layer.
-- `tui/`: FTXUI dashboard and rendering logic.
-- `tools/`: Agent tool system (FileSystem, Shell).
+# Start a multi-agent debate (Terminal 2)
+./build/cortex debate start --topic "Is AI better than humans at coding?" -p Alice -p Bob
+
+# Run a specific development task
+./build/cortex run "Build a websocket server in C++"
+
+# Stop all active debates/tasks
+./build/cortex debate stop
+```
+
+---
+
+## 🔮 Future Vision: The Agentic OS
+
+Cortex is evolving into a full-scale Operating System for AI Agents.
+
+1. **Structured Messaging**: Transitioning to high-fidelity JSON schemas for agent arguments, research, and coordination.
+2. **Tool Execution System**: Native capability for agents to `run_shell`, `read_file`, `search_repo`, and `run_tests`.
+3. **Advanced Memory**: SQLite-backed embedding storage (`agent_memory`) to allow agents to learn over time.
+4. **PID-based Management**: Control agents like Linux processes (`cortex ps`, `cortex kill [PID]`).
+5. **System Telemetry**: Real-time token usage, memory pressure, and agent state monitoring in the dashboard.
+
+---
 
 ## 🗺 Roadmap
 
-- [x] Phase 1: Foundation & Build System
-- [x] Phase 2: ZeroMQ Communication Layer
-- [x] Phase 3: AI Engine Integration (Inference)
-- [x] Phase 4: Specialized Agent Personas
-- [ ] Phase 5: Multi-step Task Decomposition
-- [ ] Phase 6: Plugin architecture for external tools
+- [x] Phase 1: ZeroMQ Bus & Ollama Integration
+- [x] Phase 2: Per-Agent LLM Configuration
+- [ ] Phase 3: **Agent Message Schema (Structured JSON)**
+- [ ] Phase 4: **Tool Execution System (Shell, File I/O)**
+- [ ] Phase 5: **Task Orchestration (Team-based workflows)**
+- [ ] Phase 6: **Agent Memory (SQLite + Embeddings)**
+- [ ] Phase 7: **PID Process Management & Kill Commands**
+- [ ] Phase 8: **Plugin System & External Integration**
 
 ## 📄 License
 This project is licensed under the MIT License.

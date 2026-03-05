@@ -24,7 +24,8 @@ public:
     AgentManager& operator=(const AgentManager&) = delete;
 
     // Create an agent of a specific type
-    std::shared_ptr<Agent> CreateAgent(const std::string& name, const std::string& type);
+    std::shared_ptr<Agent> CreateAgent(const std::string& name, const std::string& type, 
+                                     const std::string& provider = "", const std::string& model = "");
     
     // Retrieve an agent by name
     std::shared_ptr<Agent> GetAgent(const std::string& name) const;
