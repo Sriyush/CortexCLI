@@ -106,29 +106,21 @@ target_compile_definitions(sqlite3 PRIVATE SQLITE_ENABLE_COLUMN_METADATA SQLITE_
 # Include Directories
 # ------------------------------------------------------------------------------
 include_directories(
-    ${CMAKE_SOURCE_DIR}/core
-    ${CMAKE_SOURCE_DIR}/agents
-    ${CMAKE_SOURCE_DIR}/llm
-    ${CMAKE_SOURCE_DIR}/tui
-    ${CMAKE_SOURCE_DIR}/messaging
-    ${CMAKE_SOURCE_DIR}/memory
-    ${CMAKE_SOURCE_DIR}/tools
-    ${CMAKE_SOURCE_DIR}/cli
+    ${CMAKE_SOURCE_DIR}/include
 )
 
 # Executable Configuration
 # ------------------------------------------------------------------------------
 add_executable(cortex
-    cli/main.cpp
-    core/agent_manager.cpp
-    core/debate_manager.cpp
-    core/stats_manager.cpp
-    tui/dashboard.cpp
-    messaging/zeromq_bus.cpp
-    llm/llama_client.cpp
-    llm/ollama_client.cpp
-    llm/remote_client.cpp
-    memory/memory_manager.cpp
+    src/main.cpp
+    src/core/agent_manager.cpp
+    src/core/debate_manager.cpp
+    src/core/stats_manager.cpp
+    src/tui/dashboard.cpp
+    src/messaging/zeromq_bus.cpp
+    src/llm/ollama_client.cpp
+    src/llm/remote_client.cpp
+    src/memory/memory_manager.cpp
 )
 
 target_link_libraries(cortex PRIVATE 
