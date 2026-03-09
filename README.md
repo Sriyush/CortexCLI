@@ -132,5 +132,18 @@ make -j$(nproc)
 
 ---
 
-## 📄 License
+## � Roadmap
+
+- [x] **Phase 1**: ZeroMQ Bus & Ollama Core Integration
+- [x] **Phase 2**: Persistent Memory & Per-Agent LLM Config
+- [x] **Phase 3**: Structured JSON Message Schemas
+- [x] **Phase 4**: Advanced Logging & Shell/File Tool Execution
+- [x] **Phase 5**: Multi-Agent Task Orchestration & Delegation
+- [ ] **Phase 6**: Agent Memory (SQLite + Vector Embeddings)
+- [ ] **Phase 7**: PID-based Process Management & Cluster Control
+- [ ] **Phase 8**: Extension SDK (Python) & Plugin Ecosystem
+
+---
+
+## �📄 License
 MIT © 2026 Cortex CLI Team
