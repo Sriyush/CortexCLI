@@ -132,6 +132,17 @@ make -j$(nproc)
 
 ---
 
+
+--- 
+
+## ud83duddd1 Uninstallation 
+
+To completely remove Cortex CLI and its configuration: 
+
+```bash 
+bash scripts/uninstall.sh 
+``` 
+
 ## � Roadmap
 
 - [x] **Phase 1**: ZeroMQ Bus & Ollama Core Integration
