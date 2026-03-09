@@ -47,6 +47,7 @@ Cortex provides a rich CLI for managing agents, models, and workflows.
 | Flag | Description |
 |------|-------------|
 | `-d, --dashboard` | Launches the real-time TUI dashboard. |
+| `--version` | Shows the current version of Cortex CLI. |
 | `-m, --model <name>` | Selects the LLM model for the specific command. |
 | `--provider <name>` | Sets the provider (ollama, openai, gemini, claude). |
 | `--ollama-url <url>`| Sets the Ollama API endpoint (default: http://localhost:11434). |
@@ -132,18 +133,28 @@ make -j$(nproc)
 
 ---
 
+## 🗑️ Uninstallation
 
---- 
+To completely remove Cortex CLI and its configuration:
 
-## ud83duddd1 Uninstallation 
+```bash
+bash ~/.cortex/CortexCLI/scripts/uninstall.sh
+```
 
-To completely remove Cortex CLI and its configuration: 
+---
 
-```bash 
-bash scripts/uninstall.sh 
-``` 
+## 🔄 Updating
 
-## � Roadmap
+To update Cortex CLI to the latest version, simply re-run the installation command:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/Sriyush/CortexCLI/main/scripts/install.sh | bash
+```
+The script will detect your existing installation and perform a `git pull` followed by a fresh build.
+
+---
+
+## 📡 Roadmap
 
 - [x] **Phase 1**: ZeroMQ Bus & Ollama Core Integration
 - [x] **Phase 2**: Persistent Memory & Per-Agent LLM Config
@@ -156,5 +167,5 @@ bash scripts/uninstall.sh
 
 ---
 
-## �📄 License
+## 📄 License
 MIT © 2026 Cortex CLI Team
