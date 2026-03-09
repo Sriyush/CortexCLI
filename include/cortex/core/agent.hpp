@@ -9,6 +9,7 @@ namespace cortex {
 enum class AgentState {
     IDLE,
     RUNNING,
+    BUSY,
     PAUSED,
     STOPPED,
     ERROR

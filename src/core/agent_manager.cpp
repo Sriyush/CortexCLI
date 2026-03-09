@@ -8,6 +8,7 @@
 #include <cortex/agents/research_agent.hpp>
 #include <cortex/agents/coding_agent.hpp>
 #include <cortex/agents/critic_agent.hpp>
+#include <cortex/agents/orchestrator_agent.hpp>
 #include <cortex/llm/ollama_client.hpp>
 #include <cortex/llm/remote_client.hpp>
 #include <iostream>
@@ -46,6 +47,11 @@ AgentManager::AgentManager(std::shared_ptr<MessageBus> bus,
                             if (!key.empty()) {
                                 agent_llm = std::make_shared<RemoteClient>(rp, key);
                                 agent_llm->LoadModel(snapshot.llm_model);
+                            } else {
+                                std::cerr << "[AgentManager] WARNING: No API key found for agent '" << name 
+                                          << "' (provider: " << snapshot.llm_provider 
+                                          << "). Run 'cortex auth -p " << snapshot.llm_provider 
+                                          << " -k YOUR_KEY' to fix. Falling back to default LLM.\n";
                             }
                         }
                     }
@@ -57,8 +63,17 @@ AgentManager::AgentManager(std::shared_ptr<MessageBus> bus,
                     agent = std::make_shared<CodingAgent>(snapshot.name, bus_, agent_llm);
                 } else if (snapshot.type == "critic") {
                     agent = std::make_shared<CriticAgent>(snapshot.name, bus_, agent_llm);
+                } else if (snapshot.type == "orchestrator") {
+                    agent = std::make_shared<OrchestratorAgent>(snapshot.name, bus_, agent_llm);
                 } else {
                     agent = std::make_shared<BaseAgent>(snapshot.name, snapshot.type, bus_, agent_llm);
+                }
+
+                if (snapshot.llm_model.empty()) {
+                   auto models = agent_llm->ListModels();
+                   if (!models.empty()) {
+                       agent_llm->LoadModel(models[0]);
+                   }
                 }
                 
                 // Register default tools
@@ -115,6 +130,8 @@ std::shared_ptr<Agent> AgentManager::CreateAgent(const std::string& name, const 
         agent = std::make_shared<CodingAgent>(name, bus_, agent_llm);
     } else if (type == "critic") {
         agent = std::make_shared<CriticAgent>(name, bus_, agent_llm);
+    } else if (type == "orchestrator") {
+        agent = std::make_shared<OrchestratorAgent>(name, bus_, agent_llm);
     } else {
         agent = std::make_shared<BaseAgent>(name, type, bus_, agent_llm);
     }

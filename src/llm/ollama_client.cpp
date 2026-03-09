@@ -39,7 +39,7 @@ GenerationResult OllamaClient::Generate(const std::string& prompt, const Generat
     }
 
     httplib::Client cli(base_url_);
-    cli.set_read_timeout(60); // Longer timeout for generation
+    cli.set_read_timeout(300); // Longer timeout for model loading + generation
 
     json request_body = {
         {"model", model_name_},

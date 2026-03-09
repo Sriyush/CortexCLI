@@ -82,6 +82,10 @@ public:
         std::string content = args["content"];
 
         try {
+            std::filesystem::path p(path);
+            if (p.has_parent_path() && !std::filesystem::exists(p.parent_path())) {
+                std::filesystem::create_directories(p.parent_path());
+            }
             std::ofstream file(path);
             if (!file.is_open()) return "Error: Could not open file for writing: " + path;
             file << content;

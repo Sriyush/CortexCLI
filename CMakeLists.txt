@@ -115,7 +115,9 @@ add_executable(cortex
     src/main.cpp
     src/core/agent_manager.cpp
     src/core/debate_manager.cpp
+    src/core/workflow_manager.cpp
     src/core/stats_manager.cpp
+    src/core/logger.cpp
     src/tui/dashboard.cpp
     src/messaging/zeromq_bus.cpp
     src/llm/ollama_client.cpp

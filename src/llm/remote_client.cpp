@@ -44,33 +44,59 @@ GenerationResult RemoteClient::GenerateOpenAI(const std::string& prompt, const G
     GenerationResult res_obj;
     httplib::SSLClient cli("api.openai.com");
     cli.set_connection_timeout(10);
-    cli.set_read_timeout(60);
+    cli.set_read_timeout(120);
 
+    std::string model = model_name_;
+    if (model.empty()) model = "gpt-4o";
+
+    // OpenAI Responses API format (https://developers.openai.com/api/docs/guides/text)
     json body = {
-        {"model", model_name_},
-        {"messages", {{{"role", "user"}, {"content", prompt}}}},
-        {"max_tokens", options.n_predict},
-        {"temperature", options.temp},
-        {"top_p", options.top_p}
+        {"model", model},
+        {"input", prompt}
     };
+
+    std::string body_str = body.dump();
+    std::cout << "[RemoteClient] OpenAI Responses API | model=" << model << " | body_size=" << body_str.size() << "\n";
 
     httplib::Headers headers = {
         {"Authorization", "Bearer " + api_key_},
         {"Content-Type", "application/json"}
     };
 
-    auto res = cli.Post("/v1/chat/completions", headers, body.dump(), "application/json");
+    auto res = cli.Post("/v1/responses", headers, body_str, "application/json");
 
-    if (res && res->status == 200) {
-        auto j = json::parse(res->body);
-        res_obj.text = j["choices"][0]["message"]["content"];
-        if (j.contains("usage")) {
-            res_obj.prompt_tokens = j["usage"].value("prompt_tokens", 0);
-            res_obj.completion_tokens = j["usage"].value("completion_tokens", 0);
-        }
+    if (!res) {
+        std::cerr << "[RemoteClient] OpenAI connection failed.\n";
+        res_obj.text = "[RemoteClient] OpenAI Error: Connection failed";
         return res_obj;
     }
-    res_obj.text = "[RemoteClient] OpenAI API Error: " + (res ? std::to_string(res->status) : "Connection failed") + " " + (res ? res->body : "");
+
+    std::cout << "[RemoteClient] OpenAI status=" << res->status << "\n";
+
+    if (res->status == 200) {
+        try {
+            auto j = json::parse(res->body);
+            // output_text is a convenience field in the response
+            if (j.contains("output_text")) {
+                res_obj.text = j["output_text"].get<std::string>();
+            } else if (j.contains("output") && j["output"].is_array() && !j["output"].empty()) {
+                auto& msg = j["output"][0];
+                if (msg.contains("content") && msg["content"].is_array() && !msg["content"].empty()) {
+                    res_obj.text = msg["content"][0].value("text", "");
+                }
+            }
+            if (j.contains("usage")) {
+                res_obj.prompt_tokens = j["usage"].value("input_tokens", 0);
+                res_obj.completion_tokens = j["usage"].value("output_tokens", 0);
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "[RemoteClient] OpenAI parse error: " << e.what() << "\n";
+            res_obj.text = "[RemoteClient] OpenAI Error: Failed to parse response.";
+        }
+    } else {
+        std::cerr << "[RemoteClient] OpenAI error (" << res->status << "): " << res->body << "\n";
+        res_obj.text = "[RemoteClient] OpenAI Error " + std::to_string(res->status) + ": " + res->body;
+    }
     return res_obj;
 }
 
@@ -90,18 +116,33 @@ GenerationResult RemoteClient::GenerateGemini(const std::string& prompt, const G
     };
 
     std::string path = "/v1beta/models/" + model_name_ + ":generateContent?key=" + api_key_;
+    std::cout << "[RemoteClient] Gemini API | model=" << model_name_ << "\n";
     auto res = cli.Post(path.c_str(), body.dump(), "application/json");
 
-    if (res && res->status == 200) {
-        auto j = json::parse(res->body);
-        res_obj.text = j["candidates"][0]["content"]["parts"][0]["text"];
-        if (j.contains("usageMetadata")) {
-            res_obj.prompt_tokens = j["usageMetadata"].value("promptTokenCount", 0);
-            res_obj.completion_tokens = j["usageMetadata"].value("candidatesTokenCount", 0);
+    if (!res) {
+        res_obj.text = "[RemoteClient] Gemini Error: Connection failed";
+        return res_obj;
+    }
+
+    std::cout << "[RemoteClient] Gemini status=" << res->status << "\n";
+
+    if (res->status == 200) {
+        try {
+            auto j = json::parse(res->body);
+            // Gemini format: candidates[0].content.parts[0].text
+            res_obj.text = j["candidates"][0]["content"]["parts"][0]["text"].get<std::string>();
+            if (j.contains("usageMetadata")) {
+                res_obj.prompt_tokens = j["usageMetadata"].value("promptTokenCount", 0);
+                res_obj.completion_tokens = j["usageMetadata"].value("candidatesTokenCount", 0);
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "[RemoteClient] Gemini parse error: " << e.what() << "\n";
+            res_obj.text = "[RemoteClient] Gemini Error: Failed to parse response.";
         }
         return res_obj;
     }
-    res_obj.text = "[RemoteClient] Gemini API Error: " + (res ? std::to_string(res->status) : "Connection failed") + " " + (res ? res->body : "");
+    std::cerr << "[RemoteClient] Gemini error (" << res->status << "): " << res->body << "\n";
+    res_obj.text = "[RemoteClient] Gemini Error " + std::to_string(res->status) + ": " + res->body;
     return res_obj;
 }
 
@@ -143,9 +184,15 @@ GenerationResult RemoteClient::GenerateClaude(const std::string& prompt, const G
 std::vector<std::string> RemoteClient::ListModels() {
     switch (provider_) {
         case RemoteProvider::OpenAI:
-            return {"gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"};
+            return {
+                "gpt-5",
+                "gpt-5-mini",
+                "gpt-5-nano",
+                "gpt-4o",
+                "gpt-4o-mini"
+            };
         case RemoteProvider::Gemini:
-            return {"gemini-1.5-pro", "gemini-1.5-flash", "gemini-1.0-pro"};
+            return {"gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash", "gemini-2.0-flash-lite"};
         case RemoteProvider::Claude:
             return {"claude-3-5-sonnet-20240620", "claude-3-opus-20240229", "claude-3-haiku-20240307"};
         default:

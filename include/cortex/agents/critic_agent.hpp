@@ -34,12 +34,12 @@ protected:
                 // Report tokens
                 StatsManager::GetInstance().AddTokens(result.prompt_tokens + result.completion_tokens);
  
-                Message reply;
-                reply.header.msg_id = name_ + "_" + std::to_string(std::time(nullptr));
-                reply.header.sender = name_;
-                reply.header.type = "DEBATE_TURN";
-                reply.payload.action = "speak";
-                reply.payload.content = "[CRITIC] " + result.text;
+                Message reply = Message::Create(
+                    name_,
+                    "request",
+                    "speak",
+                    "[CRITIC] " + result.text
+                );
                 
                 history_.push_back({{"round", history_.size()}});
                 std::this_thread::sleep_for(std::chrono::seconds(2));

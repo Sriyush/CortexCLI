@@ -8,7 +8,7 @@
 namespace cortex {
 
 struct GenerationOptions {
-    int32_t n_predict = 128;
+    int32_t n_predict = 2048;
     float temp = 0.8f;
     float top_p = 0.95f;
 };
