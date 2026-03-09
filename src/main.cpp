@@ -30,6 +30,9 @@ int main(int argc, char** argv) {
     bool start_dashboard = false;
     app.add_flag("-d,--dashboard", start_dashboard, "Start the interactive TUI dashboard");
 
+    bool show_version = false;
+    app.add_flag("--version", show_version, "Show version information");
+
     std::string model_name;
     app.add_option("-m,--model", model_name, "Model name (e.g. tinyllama, gpt-4, gemini-1.5-pro)");
 
@@ -143,6 +146,11 @@ int main(int argc, char** argv) {
     model_remove_cmd->add_option("name", remove_model_name, "Model name to remove")->required();
 
     CLI11_PARSE(app, argc, argv);
+
+    if (show_version) {
+        std::cout << "Cortex CLI v1.0.0 (Phase 5)" << std::endl;
+        return 0;
+    }
 
     // Initialize memory manager first to load config
     auto memory_manager = std::make_shared<MemoryManager>();
