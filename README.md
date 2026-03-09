@@ -1,4 +1,4 @@
-![Cortex Brain Banner](assets/banner.png)
+![Cortex Brain Banner](assets/image.png)
 
 # 🧠 Cortex: The Multi-Agent Operating System
 
