@@ -20,7 +20,7 @@ done
 
 # Interactive check for sqlite3
 if ! command -v sqlite3 &> /dev/null; then
-    echo "Warning: sqlite3 is not installed. It is required for Cortex memory management."
+    echo "Warning: sqlite3 is not installed. It is required for Cortex memory management hehe."
     echo -n "Would you like to install sqlite3 now? (y/n): "
     read choice < /dev/tty
     case "$choice" in 
