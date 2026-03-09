@@ -1,4 +1,4 @@
-![Cortex Brain Banner](/home/ubuntu/.gemini/antigravity/brain/7c7d9451-0c2f-4061-82ab-3f79b26ffe1c/cortex_cartoon_brain_banner_1773054388013.png)
+![Cortex Brain Banner](assets/banner.png)
 
 # 🧠 Cortex: The Multi-Agent Operating System
 
@@ -37,15 +37,66 @@ curl -sSL https://raw.githubusercontent.com/Sriyush/CortexCLI/main/scripts/insta
 - **System Redirection**: Captures ALL console output (`stdout`/`stderr`) into the log file for full auditability.
 - **`cortex logs`**: Dedicated command to view/monitor agent activities and tool results.
 
-### 🤖 Specialized Agent Roles
-- `coder`: Expertise in C++, Python, and software architecture.
-- `researcher`: Optimized for data gathering and technical analysis.
-- `critic`: Provides ruthless review and edge-case identification.
-- `orchestrator`: The brain that manages workers and summarizes results.
+---
+
+## 📖 Command Reference
+
+Cortex provides a rich CLI for managing agents, models, and workflows.
+
+### 1. Global Flags
+| Flag | Description |
+|------|-------------|
+| `-d, --dashboard` | Launches the real-time TUI dashboard. |
+| `-m, --model <name>` | Selects the LLM model for the specific command. |
+| `--provider <name>` | Sets the provider (ollama, openai, gemini, claude). |
+| `--ollama-url <url>`| Sets the Ollama API endpoint (default: http://localhost:11434). |
+
+### 2. Task Execution
+```bash
+# Run a single task with an agent
+cortex run "Create a new folder 'scaffold' and add a main.cpp" -a qween
+
+# Optional: Save the agent's response to an output file
+cortex run "Explain quantum computing" -o quantum.md
+```
+
+### 3. Agent Management (`cortex agent`)
+| Command | Description |
+|---------|-------------|
+| `create <name> <type>` | Creates a new agent (Types: researcher, coder, critic, generic). |
+| `list` | Lists all agents and their types. |
+| `start <name>` | Boots up an agent process. |
+| `stop <name>` | Safely shuts down an agent. |
+| `delete <name>` | Removes an agent from the environment. |
+
+### 4. Intel & Monitoring
+```bash
+# View last 50 lines of system logs
+cortex logs
+
+# Filter logs for a specific agent
+cortex logs qween
+
+# Clearing the audit trail
+cortex logs --clear
+```
+
+### 5. Multi-Agent Workflows
+Coordinate multiple agents on complex topics or goals.
+```bash
+# Start a live debate between agents
+cortex debate start --topic "C++ vs Rust" -p Alice -p Bob
+
+# End all active debates
+cortex debate stop
+
+# Team-based goal execution
+cortex work -g "Design a high-performance ZMQ bus" -a Alice,Bob
+```
 
 ---
 
-## 🔭 Architecture
+## 🏗 Architecture
 
 Cortex uses a **Hub-and-Spoke** messaging architecture powered by **ZeroMQ**.
 
@@ -65,55 +116,6 @@ graph TD
 
 ---
 
-## 📖 Usage Guide
-
-### 1. Unified Run Command
-Execute complex tasks with any specialized agent.
-```bash
-# Optional: save response to file with -o
-./build/cortex run "What is the capital of France?" -a qween
-
-# Advanced: create a project structure
-./build/cortex run "Create an 'experiments' folder with a 'hello.py' inside" -a qween
-```
-
-### 2. Log Monitoring
-Keep track of what your agents are doing behind the scenes.
-```bash
-# View last 50 lines of activity
-./build/cortex logs
-
-# View logs for a specific agent
-./build/cortex logs qween
-
-# Clear all history
-./build/cortex logs --clear
-```
-
-### 3. Agent Lifecycle
-```bash
-# Create a custom agent
-./build/cortex agent create my-coder coder --ollama -m phi3
-
-# List your team
-./build/cortex agent list
-
-# Manage processes
-./build/cortex agent start my-coder
-./build/cortex agent stop my-coder
-```
-
-### 4. Auth & Configuration
-```bash
-# Setup API keys for Remote Providers (Gemini, OpenAI, Claude)
-./build/cortex auth
-
-# Check local model availability
-./build/cortex model list
-```
-
----
-
 ## 🛠 Build from Source
 
 ### Prerequisites
@@ -127,17 +129,6 @@ mkdir -p build && cd build
 cmake ..
 make -j$(nproc)
 ```
-
----
-
-## 📡 Roadmap
-
-- [x] **Phase 1-3**: ZMQ Bus, Persistent Memory, Structured JSON.
-- [x] **Phase 4**: Advanced Logging & Tool Execution (Shell, File I/O).
-- [x] **Phase 5**: Task Orchestration (Multi-agent delegation).
-- [ ] **Phase 6**: Agent Memory (Retrievable Embeddings).
-- [ ] **Phase 7**: PID-based Process Management.
-- [ ] **Phase 8**: Python/Plugin SDK.
 
 ---
 
