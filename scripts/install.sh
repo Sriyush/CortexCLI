@@ -11,12 +11,33 @@ if [ "$OS" != "Linux" ]; then
 fi
 
 # Dependencies check
-for cmd in cmake g++ make sqlite3 curl; do
+for cmd in cmake g++ make curl; do
     if ! command -v $cmd &> /dev/null; then
         echo "Error: $cmd is not installed. Please install it first."
         exit 1
     fi
 done
+
+# Interactive check for sqlite3
+if ! command -v sqlite3 &> /dev/null; then
+    echo "Warning: sqlite3 is not installed. It is required for Cortex memory management."
+    read -p "Would you like to install sqlite3 now? (y/n): " choice
+    case "$choice" in 
+      y|Y ) 
+        echo "Attempting to install sqlite3..."
+        if [ -f /etc/debian_version ]; then
+            sudo apt-get update && sudo apt-get install -y sqlite3 libsqlite3-dev
+        else
+            echo "Non-Debian system detected. Please install sqlite3 and libsqlite3-dev manually."
+            exit 1
+        fi
+        ;;
+      * ) 
+        echo "Aborting installation as sqlite3 is required."
+        exit 1
+        ;;
+    esac
+fi
 
 # Create installation directory
 INSTALL_DIR="$HOME/.cortex"
